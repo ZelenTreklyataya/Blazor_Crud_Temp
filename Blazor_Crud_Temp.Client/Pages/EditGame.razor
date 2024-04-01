@@ -1,0 +1,60 @@
+﻿@page "/edit-game"
+@page "/edit-game/{id:int}"
+@inject HttpClient http
+@rendermode @(new InteractiveWebAssemblyRenderMode(prerender: false))
+
+@if (id == null)
+{
+    <h3>Add Game</h3>
+}
+else
+{
+    <h3>Edit @Game.Title</h3>
+}
+
+<EditForm Model="Game" OnSubmit="HandleSubmit">
+    <div>
+        <label for="title">Title</label>
+        <InputText id="title" @bind-Value="Game.Title" class="form-control"></InputText>
+    </div>
+    <div>
+        <label for="publisher">Publisher</label>
+        <InputText id="publisher" @bind-Value="Game.Publisher" class="form-control"></InputText>
+    </div>
+    <div>
+        <label for="releaseYear">Release Year</label>
+        <InputNumber id="releaseYear" @bind-Value="Game.ReleaseYear" class="form-control"></InputNumber>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</EditForm>
+@code {
+    [Parameter]
+    public int? id { get; set; }
+
+    public VideoGame Game { get; set; } = new VideoGame();
+
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (id is not null)
+        {
+            var result = await http.GetFromJsonAsync<VideoGame>($"api/VideoGames/{(int)id}");
+            if (result is not null)
+                Game = result;
+        }
+    }
+
+    async Task HandleSubmit()
+    {
+        if(id is not null)
+        {
+            var result = await http.PatchAsJsonAsync($"api/VideoGames/{id}", Game);
+            Game = await result.Content.ReadFromJsonAsync<VideoGame>();
+        }
+        else
+        {
+            var result = await http.PostAsJsonAsync($"api/VideoGames", Game);
+            Game = await result.Content.ReadFromJsonAsync<VideoGame>();
+        }
+    }
+}
